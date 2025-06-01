@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Movie Recommendation System</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #141414;
+      color: #ffffff;
+      padding: 2rem;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #1c1c1c;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      animation: fadeIn 1s ease-out;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #e50914;
+      font-size: 1.8rem;
+    }
+
+    label {
+      font-weight: 600;
+      margin-top: 1.2rem;
+      display: block;
+      color: #fff;
+      opacity: 0.9;
+      transition: all 0.3s;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 0.6rem;
+      margin-top: 0.5rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      background-color: #333;
+      color: white;
+      transition: background 0.3s ease;
+    }
+
+    input:focus {
+      background-color: #444;
+      outline: none;
+    }
+
+    button {
+      margin-top: 2rem;
+      padding: 0.9rem;
+      width: 100%;
+      background: #e50914;
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    button:hover {
+      background: #f40612;
+      transform: translateY(-2px);
+    }
+
+    .result {
+      margin-top: 2rem;
+      background: #222;
+      padding: 1rem;
+      border-radius: 8px;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    ul {
+      padding-left: 1.2rem;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      0% {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 1rem;
+      }
+
+      .container {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>AI Movie Recommendation System</h1>
+    
+    <label for="user_id">User ID:</label>
+    <input type="number" id="user_id" placeholder="e.g. 1" />
+
+    <label for="liked_movie">Liked Movie:</label>
+    <input type="text" id="liked_movie" placeholder="e.g. The Matrix" />
+
+    <label for="keywords">Search Keywords (comma separated):</label>
+    <input type="text" id="keywords" placeholder="e.g. action, thriller, sci-fi" />
+
+    <label for="top_n">Top N Recommendations:</label>
+    <input type="number" id="top_n" value="10" />
+
+    <button onclick="getRecommendations()">🎬 Get Recommendations</button>
+
+    <div class="result" id="result" style="display:none;"></div>
+  </div>
+
+  <script>
+    async function getRecommendations() {
+      const user_id = parseInt(document.getElementById("user_id").value);
+      const liked_movie = document.getElementById("liked_movie").value;
+      const keywords = document.getElementById("keywords").value
+                        .split(",")
+                        .map(k => k.trim())
+                        .filter(k => k !== "");
+      const top_n = parseInt(document.getElementById("top_n").value);
+
+      const payload = {
+        user_id,
+        liked_movie,
+        keywords,
+        top_n
+      };
+
+      const res = await fetch("http://127.0.0.1:8000/recommend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+
+      let output = "";
+      console.log(data.recommendations);
+
+      if (data.recommendations) {
+        output += `<h3 style="color:#e50914;">Recommended Movies:</h3><ul>`;
+        data.recommendations.forEach((movie, i) => {
+            let title = movie.movie_title?.trim() || "Unknown Title";
+            let genre = Array.isArray(movie.genres) ? movie.genres.join(", ") : "Unknown Genre";
+            let actor = movie.actor_1_name || "Unknown Actor";
+            let director = movie.director_name || "Unknown Director";
+
+            output += `<li class="mb-2">
+                <strong>${i + 1}.</strong> ${title}
+                <br /><small class="text-gray-400">
+                    Genre: ${genre} | ⭐ Lead: ${actor} | 🎬 Director: ${director}
+                </small>
+        </li>`;
+        });
+        output += `</ul>`;
+      } else if (data.error) {
+        output = `<p style="color:red;">${data.error}</p>`;
+      } else {
+        output = `<p>No recommendations found.</p>`;
+      }
+
+      const resultDiv = document.getElementById("result");
+      resultDiv.style.display = "block";
+      resultDiv.innerHTML = output;
+    }
+  </script>
+</body>
+</html>
